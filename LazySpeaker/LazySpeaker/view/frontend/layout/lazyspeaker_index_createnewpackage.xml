@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" layout="3columns" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <head>
+        <css src="Mageplaza_LazySpeaker/css/jquery.dataTables.min.css" />
+        <css src="Mageplaza_LazySpeaker/css/select.dataTables.min.css" />
+        <css src="Mageplaza_LazySpeaker/css/dataTables.bootstrap4.min.css" />
+        <css src="Mageplaza_LazySpeaker/css/rowReorder.dataTables.min.css" />
+    </head>
+    <body>
+        <referenceContainer name="header.container">
+            <referenceBlock name="top.search" remove="true"/>
+        </referenceContainer>
+        <referenceBlock name="minicart" remove="true" />
+    </body>
+    <referenceContainer name="content">
+        <referenceBlock name="sale.reorder.sidebar" remove="true"/>
+        <referenceBlock name="copyright" remove="true"/>
+        <referenceBlock name="footer" remove="true"/>
+        <referenceBlock name="catalog.compare.sidebar" remove="true"/>
+        <referenceBlock name="wishlist_sidebar" remove="true"/>
+        <block class="Mageplaza\LazySpeaker\Block\ProcessForm" name="new.package"
+               template="Mageplaza_LazySpeaker::createnewpackage.phtml" cacheable="false" />
+    </referenceContainer>
+    <referenceContainer name="sidebar.additional">
+<!--        quang cao o day-->
+    </referenceContainer>
+</page>
