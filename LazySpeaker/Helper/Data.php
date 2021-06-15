@@ -5,9 +5,13 @@ use Exception;
 use Magento\Framework\App\Helper\Context;
 use Magento\Framework\Controller\Result\RedirectFactory;
 use Mageplaza\LazySpeaker\Model\PackageFactory;
+use Mageplaza\LazySpeaker\Model\PostFactory;
+use Mageplaza\LazySpeaker\Model\PostPackageFactory;
 use Mageplaza\LazySpeaker\Model\ResourceModel\PackageWord\CollectionFactory as PackageWordCollection;
 use Mageplaza\LazySpeaker\Model\WordFactory;
 use Mageplaza\LazySpeaker\Model\ResourceModel\Word\CollectionFactory as WordCollectionFactory;
+use Mageplaza\LazySpeaker\Model\ResourceModel\Post\CollectionFactory as PostCollectionFactory;
+use Mageplaza\LazySpeaker\Model\ResourceModel\PostPackage\CollectionFactory as PostPackgeCollectionFactory;
 use Magento\Framework\App\Helper\AbstractHelper;
 
 
@@ -26,9 +30,17 @@ class Data extends AbstractHelper {
 
     protected $packageWordCollection;
 
+    protected $postPackageCollection;
+
     protected $packageFactory;
 
     protected $resultRedirectFactory;
+
+    protected $postCollectionFactory;
+
+    protected $postFactory;
+
+    protected $postPackageFactory;
 
     /**
      * Save constructor.
@@ -40,6 +52,10 @@ class Data extends AbstractHelper {
      * @param PackageWordCollection $packageWordCollection
      * @param PackageFactory $packageFactory
      * @param RedirectFactory $resultRedirectFactory
+     * @param PostFactory $postFactory
+     * @param PostPackageFactory $postPackageFactory
+     * @param PostCollectionFactory $postCollectionFactory
+     * @param PostPackgeCollectionFactory $postPackageCollection
      */
     public function __construct(
         Context $context,
@@ -48,15 +64,23 @@ class Data extends AbstractHelper {
         WordCollectionFactory $wordCollectionFactory,
         PackageWordCollection $packageWordCollection,
         PackageFactory $packageFactory,
-        RedirectFactory $resultRedirectFactory
+        RedirectFactory $resultRedirectFactory,
+        PostFactory $postFactory,
+        PostPackageFactory $postPackageFactory,
+        PostCollectionFactory $postCollectionFactory,
+        PostPackgeCollectionFactory $postPackageCollection
 
     ) {
-        $this->resultRedirectFactory = $resultRedirectFactory;
-        $this->wordCollectionFactory = $wordCollectionFactory;
-        $this->_customerSession = $_customerSession;
-        $this->wordFactory = $wordFactory;
-        $this->packageWordCollection = $packageWordCollection;
-        $this->packageFactory = $packageFactory;
+        $this->resultRedirectFactory    = $resultRedirectFactory;
+        $this->wordCollectionFactory    = $wordCollectionFactory;
+        $this->_customerSession         = $_customerSession;
+        $this->wordFactory              = $wordFactory;
+        $this->packageWordCollection    = $packageWordCollection;
+        $this->packageFactory           = $packageFactory;
+        $this->postFactory              = $postFactory;
+        $this->postPackageFactory       = $postPackageFactory;
+        $this->postCollectionFactory    = $postCollectionFactory;
+        $this->postPackageCollection    = $postPackageCollection;
         parent::__construct($context);
     }
 
@@ -138,5 +162,33 @@ class Data extends AbstractHelper {
 
     public function getLang() {
         return $this->_customerSession->getLang();
+    }
+
+    public function getPostsData() {
+        //lấy key chung theo name vì vậy package anme không được lặp lại
+        $allPosts = $this->postCollectionFactory->create()->addFieldToSelect('*');
+        $allPostsData = [];
+        foreach ($allPosts as $post) {
+            $allPostsData[$post->getId()]['post_data'] = json_decode(json_encode($post->getData()),1);
+            $allPackages = $this->postPackageCollection->create()
+                          ->addFieldToFilter('post_id', ['eq' => $post->getId()])
+                          ->addFieldToSelect('package_id');
+            foreach ($allPackages as $pack) {
+                $packageName = $this->getPackageData($pack->getData('package_id'))['name'];
+                $allWords = $this->packageWordCollection->create()
+                    ->addFieldToFilter('package_id', ['eq' => $pack->getData('package_id')])
+                    ->addFieldToSelect('word_id');
+                foreach ($allWords as $word) {
+                    $allPostsData[$post->getId()]['package_data'][$packageName][] = $this->getWordData($word->getData('word_id'));;
+                }
+            }
+        }
+
+        $writer = new \Zend\Log\Writer\Stream(BP . '/var/log/test.log');
+        $logger = new \Zend\Log\Logger();
+        $logger->addWriter($writer);
+        $logger->info($allPostsData);
+
+        return $allPostsData;
     }
 }

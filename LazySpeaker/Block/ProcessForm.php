@@ -110,26 +110,40 @@ class ProcessForm extends Template
         return $arrOption;
     }
 
+
     //from viewallpackage set data to session by ajax, if success -> redirect
     public function getShareDataPackage() {
         $userId = $this->_customerSession->getCustomer()->getId();
+        //block hacker
+        $resultRedirect = $this->resultRedirectFactory->create();
+        $returnViewPacakge = $this->getUrl('lazyspeaker/index/viewallpackage', ['_secure' => true]);
+        $resultRedirect->setPath($returnViewPacakge);
+        //block hacker
         // important!
         $packageIds = $this->_customerSession->getPackIdsShare();
+        $this->_customerSession->unsPackIdsShare();
+        if(!$packageIds) {
+            $this->messageManager->addErrorMessage(__('Something went wrong. Please try again.'));
+            return $resultRedirect;
+        }
         $data = [];
-        if($packageIds) {
-            foreach ($packageIds as $id) {
-                if($this->helperData->checkOwnPackage($userId, $id)) {
-                    $packageName = $this->helperData->getPackageData($id)['name'];
-                    $allWords = $this->packageWordCollection->create()
-                        ->addFieldToFilter('package_id', ['eq' => $id])
-                        ->addFieldToSelect('word_id');
-                    foreach ($allWords as $word) {
-                    $data[$packageName][] = $this->helperData->getWordData($word->getData('word_id'));
-                    }
-                    $data[$packageName][] = $id;
-                    $data[$packageName][] = strtolower($packageName).$id;
-                    $data[$packageName][] = $packageName;
+        foreach ($packageIds as $id) {
+            if($this->helperData->checkOwnPackage($userId, $id)) {
+
+                //lấy key chung theo name vì vậy package anme không được lặp lại
+                $packageName = $this->helperData->getPackageData($id)['name'];
+                $allWords = $this->packageWordCollection->create()
+                    ->addFieldToFilter('package_id', ['eq' => $id])
+                    ->addFieldToSelect('word_id');
+                foreach ($allWords as $word) {
+                $data[$packageName][] = $this->helperData->getWordData($word->getData('word_id'));
                 }
+                $data[$packageName][] = $id;
+                $data[$packageName][] = strtolower($packageName).$id;
+                $data[$packageName][] = $packageName;
+            } else {
+                $this->messageManager->addErrorMessage(__('Something went wrong. Please try again.'));
+                return $resultRedirect;
             }
         }
         return $data;
