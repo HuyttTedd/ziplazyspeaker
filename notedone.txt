@@ -1,0 +1,1 @@
+them xóa package khi create post, nguoi dung co the xoa no di.
