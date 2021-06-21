@@ -23,6 +23,14 @@ $dataPackage = $block->getShareDataPackage();
         background: url('https://datatables.net/examples/resources/details_close.png') no-repeat center center;
     }
 
+    td.details-control-word {
+        background: url('https://datatables.net/examples/resources/details_open.png') no-repeat center center;
+        cursor: pointer;
+    }
+    tr.shown td.details-control-word {
+        background: url('https://datatables.net/examples/resources/details_close.png') no-repeat center center;
+    }
+
     .preview {
         margin-top: 1rem;
     }
@@ -175,7 +183,6 @@ $dataPackage = $block->getShareDataPackage();
                     $('#example tbody').on('click', 'td.details-control', function () {
                         var tr = $(this).closest('tr');
                         var row = table.row( tr );
-                        console.log(row.data());
                         if ( row.child.isShown() ) {
                             // This row is already open - close it
                             row.child.hide();

@@ -31,32 +31,6 @@ use Mageplaza\LazySpeaker\Model\ResourceModel\Like as LikeResource;
  */
 class Collection extends AbstractCollection
 {
-    /**
-     * ID Field Name
-     *
-     * @var string
-     */
-    protected $_idFieldName = 'id';
-
-    /**
-     * Event prefix
-     *
-     * @var string
-     */
-    protected $_eventPrefix = 'lazyspeaker_like_entity_collection';
-
-    /**
-     * Event object
-     *
-     * @var string
-     */
-    protected $_eventObject = 'like_collection';
-
-    /**
-     * Define resource model
-     *
-     * @return void
-     */
     protected function _construct()
     {
         $this->_init(Like::class, LikeResource::class);

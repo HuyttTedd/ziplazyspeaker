@@ -1,6 +1,9 @@
 <?xml version="1.0"?>
 <page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" layout="3columns" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
     <head>
+        <css src="Mageplaza_LazySpeaker/css/fontawesome/fontawesome.css" />
+        <css src="Mageplaza_LazySpeaker/css/fontawesome/regular.css" />
+        <css src="Mageplaza_LazySpeaker/css/fontawesome/solid.css" />
         <css src="Mageplaza_LazySpeaker/css/jquery.dataTables.min.css" />
         <css src="Mageplaza_LazySpeaker/css/select.dataTables.min.css" />
         <css src="Mageplaza_LazySpeaker/css/dataTables.bootstrap4.min.css" />

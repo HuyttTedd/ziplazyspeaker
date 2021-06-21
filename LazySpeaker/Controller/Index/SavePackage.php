@@ -89,11 +89,44 @@ class SavePackage extends Action
             return $resultRedirect;
         }
 
+        // check duplicate package's name
+        $allNames = [];
+        $allPackageName = $this->packageCollectionFactory->create()
+                            ->addFieldToFilter('user_id', ['eq' => $userId])
+                            ->addFieldToSelect('name')->toOptionArray();
+        foreach ($allPackageName as $name) {
+            $allNames[] = $name['label'];
+        }
+        if(in_array($packageName, $allNames) && !isset($allData['package_id'])) {
+            $this->messageManager->addErrorMessage(__('Tên package bị trùng!'));
+            $resultRedirect->setPath($returnAddPackage);
+            return $resultRedirect;
+        }
+//        elseif(in_array($packageName, $allNames) && isset($allData['package_id'])) {
+//            $this->messageManager->addErrorMessage(__('Tên package bị trùng!'));
+//            $returnEdit = $this->_url->getUrl('lazyspeaker/index/editpackage', ['package' => $allData['package_id'], '_current' => true]);
+//            return $resultRedirect->setPath($returnEdit);
+//        }
+//        array (
+//            0 =>
+//                array (
+//                    'value' => NULL,
+//                    'label' => 'Environment',
+//                ),
+//            1 =>
+//                array (
+//                    'value' => NULL,
+//                    'label' => 'Future',
+//                ),
+//        )
+        // end check duplicate package's name
+
+
         //edit package
         if(isset($allData['package_id']) && $this->helperData->checkOwnPackage($userId, $allData['package_id'])) {
             $packageId = $allData['package_id'];
             try {
-                $this->packageFactory->create()->load($packageId)->setData('name', $packageName);
+                $this->packageFactory->create()->load($packageId)->setData('name', $packageName)->save();
                 $this->helperData->deleteAllPackageWord($packageId);
 
                 if ($allData['ids'] != '') {

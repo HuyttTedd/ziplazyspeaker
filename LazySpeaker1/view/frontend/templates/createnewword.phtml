@@ -1,0 +1,98 @@
+<?php
+use Mageplaza\LazySpeaker\Block\ProcessForm;
+/** @var ProcessForm $block */
+?>
+
+<div class="row">
+    <div class="col-4">
+        <form name="addData" method="post" id="addData" class="form"
+              action="<?= $block->getWordFormAction(); ?>"
+              data-hasrequired="<?= $block->escapeHtmlAttr(__('* Required Fields')) ?>"
+              data-mage-init='{"validation":{}}' enctype="multipart/form-data">
+            <input name="form_key" type="hidden" value="<?php echo $block->getFormKey();?>">
+            <fieldset class="fieldset">
+                <legend class="legend">
+                    <span><?= $block->escapeHtmlAttr(__('Add new word')) ?></span>
+                </legend>
+                <fieldset class="fieldset row">
+                    <div class="fields col-4 bg-primary">
+                        <div class="field name required">
+                            <label class="label" for="title"><span><?= $block->
+                                    escapeHtmlAttr(__('Word')) ?></span></label>
+                            <div class="control">
+                                <input name="word" id="word" title="Word" class="input-text" type="text"
+                                       data-validate="{required:true}">
+                            </div>
+                        </div>
+                        <div class="field file-uploader-image">
+                            <label class="label" for="title"><span><?= $block->escapeHtmlAttr(__('Image')) ?></span></label>
+                            <div class="control">
+                                <input name="image" id="image" title="Image" class="input-file" type="file">
+                            </div>
+                        </div>
+                        <div class="field select">
+                            <label class="label" for="title">
+                                <span><?= $block->escapeHtmlAttr(__('Word-class')) ?></span>
+                            </label>
+                            <div class="control">
+                                <!--                                <input name="email" id="meaning" title="Email" value="" class="input-text validate-length" type="text"-->
+                                <!--                                       data-validate="{required:true, 'min_text_length':'1'}" />-->
+                                <select name="word_class" id="word_class" class="col-2">
+                                    <?php foreach ($block->getOptionWordClass() as $opt): ?>
+                                        <option value="<?= $opt['value'] ?>"><?= $opt['label'] ?></option>
+                                    <?php endforeach ?>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="field name required">
+                            <label class="label" for="title">
+                                <span><?= $block->escapeHtmlAttr(__('Meaning')) ?></span>
+                            </label>
+                            <div class="control">
+                                <textarea name="meaning" id="meaning" title="Meaning"
+                                          class="input-text validate-length" type="textarea"
+                                          rows="4" cols="50"
+                                          data-validate="{required:true, 'min_text_length':'1'}"></textarea>
+                            </div>
+                        </div>
+                        <div class="field name">
+                            <label class="label" for="title">
+                                <span><?= $block->escapeHtmlAttr(__('Example Sentence')) ?></span>
+                            </label>
+                            <div class="control">
+                                <textarea name="sentence_example" id="sentence_example" title="Example Meaning"
+                                          class="input-text" type="textarea" rows="4" cols="50""></textarea>
+                            </div>
+                        </div>
+                        <div class="field name">
+                            <label class="label" for="title">
+                                <span><?= $block->escapeHtmlAttr(__('Meaning Example Sentence')) ?></span>
+                            </label>
+                            <div class="control">
+                                <textarea name="sentence_meaning" id="sentence_meaning"
+                                          title="Meaning Example Sentence" class="input-text"
+                                          type="textarea" rows="4" cols="50""></textarea>
+                            </div>
+                        </div>
+                        <div class="field name">
+                            <label class="label" for="title">
+                                <span><?= $block->escapeHtmlAttr(__('Note')) ?></span>
+                            </label>
+                            <div class="control">
+                                <textarea name="note" id="note"
+                                          title="Note" class="input-text"
+                                          type="textarea" rows="4" cols="50""></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </fieldset>
+            </fieldset>
+            <div class="actions-toolbar">
+                <div class="primary">
+                    <button type="submit" class="action submit primary" title="Save"><span><?= $block->
+                            escapeHtmlAttr(__('Save')) ?></span></button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>

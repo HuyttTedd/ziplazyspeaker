@@ -13,6 +13,8 @@ use Mageplaza\LazySpeaker\Model\ResourceModel\Word\CollectionFactory as WordColl
 use Mageplaza\LazySpeaker\Model\ResourceModel\Post\CollectionFactory as PostCollectionFactory;
 use Mageplaza\LazySpeaker\Model\ResourceModel\PostPackage\CollectionFactory as PostPackgeCollectionFactory;
 use Magento\Framework\App\Helper\AbstractHelper;
+use Mageplaza\LazySpeaker\Model\LikeFactory;
+use Mageplaza\LazySpeaker\Model\ResourceModel\Like\CollectionFactory as LikeCollectionFactory;
 
 
 
@@ -42,6 +44,10 @@ class Data extends AbstractHelper {
 
     protected $postPackageFactory;
 
+    protected $likeFactory;
+
+    protected $likeCollectionFactory;
+
     /**
      * Save constructor.
      *
@@ -56,6 +62,8 @@ class Data extends AbstractHelper {
      * @param PostPackageFactory $postPackageFactory
      * @param PostCollectionFactory $postCollectionFactory
      * @param PostPackgeCollectionFactory $postPackageCollection
+     * @param LikeFactory $likeFactory
+     * @param LikeCollectionFactory $likeCollectionFactory
      */
     public function __construct(
         Context $context,
@@ -68,7 +76,9 @@ class Data extends AbstractHelper {
         PostFactory $postFactory,
         PostPackageFactory $postPackageFactory,
         PostCollectionFactory $postCollectionFactory,
-        PostPackgeCollectionFactory $postPackageCollection
+        PostPackgeCollectionFactory $postPackageCollection,
+        LikeFactory $likeFactory,
+        LikeCollectionFactory $likeCollectionFactory
 
     ) {
         $this->resultRedirectFactory    = $resultRedirectFactory;
@@ -81,6 +91,8 @@ class Data extends AbstractHelper {
         $this->postPackageFactory       = $postPackageFactory;
         $this->postCollectionFactory    = $postCollectionFactory;
         $this->postPackageCollection    = $postPackageCollection;
+        $this->likeFactory              = $likeFactory;
+        $this->likeCollectionFactory    = $likeCollectionFactory;
         parent::__construct($context);
     }
 
@@ -169,7 +181,9 @@ class Data extends AbstractHelper {
         $allPosts = $this->postCollectionFactory->create()->addFieldToSelect('*');
         $allPostsData = [];
         foreach ($allPosts as $post) {
+            $totalLike = $this->likeCollectionFactory->create()->addFieldToFilter('post_id', ['eq' => $post->getId()])->getSize();
             $allPostsData[$post->getId()]['post_data'] = json_decode(json_encode($post->getData()),1);
+            $allPostsData[$post->getId()]['total_like'] = $totalLike;
             $allPackages = $this->postPackageCollection->create()
                           ->addFieldToFilter('post_id', ['eq' => $post->getId()])
                           ->addFieldToSelect('package_id');
@@ -179,16 +193,21 @@ class Data extends AbstractHelper {
                     ->addFieldToFilter('package_id', ['eq' => $pack->getData('package_id')])
                     ->addFieldToSelect('word_id');
                 foreach ($allWords as $word) {
-                    $allPostsData[$post->getId()]['package_data'][$packageName][] = $this->getWordData($word->getData('word_id'));;
+                    $allPostsData[$post->getId()]['package_data'][$packageName][] = $this->getWordData($word->getData('word_id'));
                 }
+                    $allPostsData[$post->getId()]['package_data'][$packageName][] = $pack->getData('package_id');
             }
         }
 
-        $writer = new \Zend\Log\Writer\Stream(BP . '/var/log/test.log');
-        $logger = new \Zend\Log\Logger();
-        $logger->addWriter($writer);
-        $logger->info($allPostsData);
+//        $writer = new \Zend\Log\Writer\Stream(BP . '/var/log/test.log');
+//        $logger = new \Zend\Log\Logger();
+//        $logger->addWriter($writer);
+//        $logger->info($allPostsData);
 
         return $allPostsData;
+    }
+
+    public function getCustomerId() {
+        return $this->_customerSession->getId();
     }
 }

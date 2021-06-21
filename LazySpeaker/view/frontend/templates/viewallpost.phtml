@@ -1,60 +1,60 @@
 <?php
 use Mageplaza\LazySpeaker\Block\ProcessForm;
 /** @var ProcessForm $block */
-$block->helperData->getPostsData();
+$data = $block->helperData->getPostsData();
+$userId = $block->helperData->getCustomerId();
 ?>
-
-<div class="row">
-    <div class="col-4">
-        <fieldset class="fieldset">
-            <legend class="legend">
-                <span><?= $block->escapeHtmlAttr(__('View All Packages')) ?></span>
-            </legend>
-            <fieldset class="fieldset row">
-                <div class="fields col-4 bg-primary">
-                    <div class="field name required">
-                        <div class="control">
-                            <button class="button btn-primary" id="delete-row">Delete</button>
-                            <button class="button btn-primary" id="edit-row">Edit</button>
-                            <button class="button btn-primary" id="create-post">Create a post with selected package</button>
-                        </div>
-                    </div>
-                </div>
-            </fieldset>
-        </fieldset>
-    </div>
-</div>
-
-<div class="container">
-    <table id="example" class="display cell-border" style="width:100%">
-        <thead>
-        <tr>
-            <th><input id='exampleSelectAll' type="checkbox"></th>
-            <th>Vị trí</th>
-            <th></th>
-            <th>Gói từ</th>
-            <th>Số từ</th>
-        </tr>
-        </thead>
-
-        <tbody id="all-words">
-        </tbody>
-
-        <tfoot>
-        <tr>
-            <th></th>
-            <th>Vị trí</th>
-            <th></th>
-            <th>Gói từ</th>
-            <th>Số từ</th>
-        </tr>
-        </tfoot>
-    </table>
-</div>
 
 <style>
     select.custom-select {
         width: 50px !important;
+    }
+
+    td.details-control {
+        background: url('https://datatables.net/examples/resources/details_open.png') no-repeat center center;
+        cursor: pointer;
+    }
+    tr.shown td.details-control {
+        background: url('https://upload.wikimedia.org/wikipedia/commons/f/ff/Green_icon.svg') no-repeat center center;
+    }
+
+    td.details-control-word {
+        background: url('https://datatables.net/examples/resources/details_open.png') no-repeat center center;
+        cursor: pointer;
+    }
+    tr.shown td.details-control-word {
+        background: url('https://upload.wikimedia.org/wikipedia/commons/f/ff/Green_icon.svg') no-repeat center center;
+    }
+
+    .like {
+        cursor: pointer;
+    }
+
+    .count-like {
+        text-align: center;
+    }
+
+    .like-text {
+        font-size: 1.5rem;
+        margin-left: 1rem;
+    }
+
+    .like:hover {
+        color: green;
+    }
+
+    .pack {
+        margin: 2rem;
+        width: 15rem;
+    }
+
+    .child-row {
+        width: 30%;
+        text-align: center;
+    }
+
+    .count-like {
+        margin-right: 0;
     }
 </style>
 
@@ -67,202 +67,290 @@ $block->helperData->getPostsData();
         'datatables_select'
     ], function($, url, Swal){
         $(document).ready( function () {
+            var dataTable = <?= json_encode($data) ?>;
+            var postData = [];
+            var packageData = [];
 
-            //load Ajax
-            var ajaxUrl = url.build('loadpackages');
-            var ajaxUrlDelete = url.build('delete');
-            var dataAjax = 'getAll';
-            var tableHtml = '';
-            var table;
-            $('#delete-row').prop('disabled', true);
-            $('#edit-row').prop('disabled', true);
-            var idSelected = [];
+            console.log(dataTable);
+            $.map(dataTable, function (item) {
+                item['post_data']['package_data'] = item['package_data'];
+                item['post_data']['total_like'] = item['total_like'];
+                postData.push(item['post_data']);
+            });
+            //event when click to view package
+            function viewPackageData(idButton, data, packageId) {
+                $('#' + idButton).on('click', function (e) {
+                    Swal.fire({
+                        title: "Bạn muốn làm gì?",
+                        type: "info",
+                        width: 400,
+                        showCancelButton: true,
+                        showCloseButton: true,
+                        confirmButtonText: "Lấy gói từ này",
+                        confirmButtonColor: "#ff0055",
+                        cancelButtonColor: "#999999",
+                        cancelButtonText: "Xem tất cả các từ",
+                        reverseButtons: true,
+                        focusConfirm: false,
+                        focusCancel: false
+                    }).then(function(isConfirm) {
+                        if (isConfirm.isConfirmed) {
+                            Swal.fire({
+                                title: 'Please Wait!',
+                                html: 'saving...',// add html attribute if you want or remove
+                                allowOutsideClick: false,
+                                showConfirmButton: false,
+                                allowEscapeKey: false,
+                                allowEnterKey: false,
+                                onBeforeOpen: () => {
+                                    Swal.showLoading()
+                                },
+                            });
+                            $.ajax({
+                                url: "<?= $block->getUrl('lazyspeaker/index/makepackagemine'); ?>",
+                                type: 'POST',
+                                data: {'package_id': packageId},
+                                success: function (data) {
+                                    if(data['result']) {
+                                        Swal.fire({
+                                            icon: 'success',
+                                            title: 'Lưu gói từ thành công!'
+                                        });
+                                    } else {
+                                        Swal.fire({
+                                            icon: 'error',
+                                            title: 'Oops...',
+                                            text: 'Có lỗi xảy ra hoặc gói từ bị trùng tên gói từ đã có. Vui lòng đổi tên gói từ của bạn và thử lại!'
+                                        });
+                                    }
+                                },
+                                error: function (error) {
+                                    Swal.fire({
+                                        icon: 'error',
+                                        title: 'Oops...',
+                                        text: 'Có lỗi xảy ra, xin vui lòng thử lại!'
+                                    });
+                                }
+                            });
+                        } else if(isConfirm.dismiss === "cancel") {
+                            Swal.fire({
+                                width: 900,
+                                html: `<table id="example" class="display" style="width:100%">
+                                    <thead>
+                                        <tr>
+                                            <th></th>
+                                            <th>Word</th>
+                                        </tr>
+                                    </thead>
+                                    <tfoot>
+                                        <tr>
+                                            <th></th>
+                                            <th>Word</th>
+                                        </tr>
+                                    </tfoot>
+                                </table>`
+                            });
+                            table = $('#example').DataTable({
+                                "data": data,
+                                "columns": [
+                                    {
+                                        "className":      'details-control-word',
+                                        "orderable":      false,
+                                        "data":           null,
+                                        "defaultContent": ''
+                                    },
+                                    { "data": "word" }
+                                ],
+                                columnDefs: [
+                                    { "width": "5%", "targets": 0 },
+                                    { "orderable": false, "targets": [0, 1] }
+                                ],
+                                "order": [[1, 'asc']],
+                                "pageLength": 2,
+                                "lengthChange" : false,
+                                "ordering": false,
+                                "pagingType": "full_numbers"
+                            });
 
-            function getRowsTable(item) {
-                return "<tr><th></th>" +
-                    "<td>"+item['package_position']+"</td>" +
-                    "<td>"+item['id']+"</td>" +
-                    "<td style='word-break:break-all;white-space:normal;'>"+item['name']+"</td>" +
-                    "<td style='white-space:normal;'>"+item['count_word']+"</td>" +
-                    "</tr>";
-            }
+                            function formatChild ( data ) {
+                                // `d` is the original data object for the row
+                                let bodyChild = '<tr>'+
+                                    '<td class="child-row">Meaning</td>'+
+                                    '<td>'+data['meaning']+'</td>'+
+                                    '</tr>'+
+                                    '<tr>'+
+                                    '<td class="child-row">Example Sentence</td>'+
+                                    '<td>'+data['sentence_example']+'</td>'+
+                                    '</tr>'+
+                                    '<tr>'+
+                                    '<td class="child-row">Sentence\'s Meaning</td>'+
+                                    '<td>'+data['sentence_meaning']+'</td>'+
+                                    '</tr>'+
+                                    '<tr>'+
+                                    '<td class="child-row">Word Class</td>'+
+                                    '<td>'+data['word_class']+'</td>'+
+                                    '</tr>';
+                                return '<table cellpadding="5" cellspacing="0" border="1">' +
+                                    bodyChild
+                                    + '</table>';
+                            }
 
-            function createTable() {
-                return $('#example').DataTable({
-                    "lengthMenu": [[5, 10, 15, 20, -1], [5, 10, 15, 20, "All"]],
-                    responsive: true,
-                    order: [[1, 'asc']],
-                    columnDefs: [
-                        //Added to set class name for reordering ability
-                        {targets: [1,3], className: 'reorder'},
-                        { "width": "5%", "targets": 0 },
-                        { "width": "10%", "targets": 1 },
-                        { "width": "60%", "targets": 3 },
-                        { "orderable": false, "targets": [0, 3, 4] },
-                        {
-                            orderable: true,
-                            className: 'select-checkbox',
-                            targets: 0
-                        },
-                        {
-                            "targets": [ 2 ],
-                            "visible": false,
-                            "searchable": false
+                            // Add event listener for opening and closing details
+                            $('#example tbody').on('click', 'td.details-control-word', function () {
+                                var tr = $(this).closest('tr');
+                                var row = table.row( tr );
+                                if ( row.child.isShown() ) {
+                                    // This row is already open - close it
+                                    row.child.hide();
+                                    tr.removeClass('shown');
+                                }
+                                else {
+                                    // Open this row
+                                    row.child( formatChild(row.data()) ).show();
+                                    tr.addClass('shown');
+                                }
+                            });
+                            $('td.details-control-word').click();
                         }
-                    ],
-                    select: {
-                        style: 'multi',
+                    });
+                });
+            }
+
+            //count like event
+
+            function likeEvent(id, total_like) {
+                let count;
+                $('#' + id).on('click', function (e) {
+                    $.ajax({
+                        url: "<?= $block->getUrl('lazyspeaker/index/savelike'); ?>",
+                        type: 'POST',
+                        data: {'post_id': id },
+                        success: function (data) {
+                            console.log(data['result']);
+                            //countLike_
+                            if(data['total_like'] != null) {
+                                if(data['result'] == 0) {
+                                    count = data['total_like'];
+                                } else if(data['result'] == 1) {
+                                    count = data['total_like'] + 1;
+                                }
+                            }
+                            $('#' + 'countLike_' + id).html('a');
+                        },
+                        error: function (error) {
+
+                        }
+                    });
+                });
+            }
+
+
+            //render data for each row
+            var arrayLikeButton = [];
+            function format ( data ) {
+                console.log(data);
+                let flag, allKeys, keyButton, pack, idPackToStore, likeId, countLikeId, arrLikeData;
+                likeId = 'like_'+ data['id'];
+                arrLikeData = {'id' : likeId, total_like: data['total_like']};
+                arrayLikeButton.push(arrLikeData);
+
+                countLikeId = 'countLike_' + data['id'];
+                // `d` is the original data object for the row
+                allKeys = Object.keys(data['package_data']);
+                let allButtonIds = [];
+                let allButton = '';
+                $.map(allKeys, function (key) {
+                    pack = data['package_data'][key];
+                    keyButton = key + pack[pack.length - 1] + data['id'];
+                    idPackToStore = pack[pack.length - 1];
+                    allButtonIds.push({id: keyButton, label: key, package_id: idPackToStore});
+                    pack.pop();
+                    flag = {id : keyButton, package: pack, package_id: idPackToStore};
+                    packageData.push(flag);
+                });
+                allButton += '<td>';
+                allButtonIds.forEach(function (item) {
+                    allButton += '<button class="pack" id="'+item['id']+'">'+item['label']+'</button>';
+                });
+                allButton += '</td>';
+                let bodyChild = '<tr>'+
+                    '<td class="child-row">Các gói từ</td>'+
+                    allButton +
+                    '</tr>' +
+                    '<tr>'+
+                    '<td class="like child-row" id="'+likeId+'">' +
+                    '<i class="far fa-thumbs-up"></i><span class="like-text">Like</span>' +
+                    '</td>' +
+                    '<td class="count-like">' +
+                    '<i class="fas fa-thumbs-up"></i>' +
+                    '<span id="'+countLikeId+'" class="like-text">'+data['total_like']+'</span>' +
+                    '</td>'+
+                    '</tr>';
+                return '<table cellpadding="5" cellspacing="0" border="1">' +
+                    bodyChild
+                    + '</table>';
+            }
+
+            var table = $('#allPosts').DataTable({
+                "data": postData,
+                "columns": [
+                    {
+                        "className":      'details-control',
+                        "orderable":      false,
+                        "data":           null,
+                        "defaultContent": ''
                     },
-                    rowReorder: {
-                        //Changed selecotr to the reorder class anme
-                        selector: '.reorder',
-                        //Set dataSrc to the column containing the reorder sequence number
-                        dataSrc: 1
-                    }
-                });
-            }
+                    { "data": "title" }
+                ],
+                columnDefs: [
+                    { "width": "5%", "targets": 0 },
+                    { "orderable": false, "targets": [0, 1] }
+                ],
+                "order": [[1, 'asc']],
+                "ordering": false
+            });
 
-            function tableFunction(table) {
-                $("#exampleSelectAll").on( "click", function(e) {
-                    if ($(this).is( ":checked" )) {
-                        table.rows({page: 'current'}).select();
-                    } else {
-                        table.rows().deselect();
-                    }
-                });
-
-                table.on('select', function (e, dt, type, indexes) {
-                    idSelected = [];
-                    var rowsSelected = dt.rows({selected: true}).data();
-                    $.map(rowsSelected, function (item) {
-                        idSelected.push(item[2]);
-                    });
-                    var count = dt.rows({selected: true}).count();
-                    if(count > 0) {
-                        $('#delete-row').prop('disabled', false);
-                    }
-                    if(count == 1) {
-                        $('#edit-row').prop('disabled', false);
-                    }
-                    if(count > 1 || count < 1) {
-                        $('#edit-row').prop('disabled', true);
-                    }
-                });
-
-                table.on('deselect', function (e, dt, type, indexes) {
-                    idSelected = [];
-                    var rowsSelected = dt.rows({selected: true}).data();
-                    $.map(rowsSelected, function (item) {
-                        idSelected.push(item[2]);
-                    });
-                    var count = dt.rows({selected: true}).count();
-                    if(count < 1) {
-                        $('#delete-row').prop('disabled', true);
-                    }
-                    if(count == 1) {
-                        $('#edit-row').prop('disabled', false);
-                    }
-                    if(count > 1 || count < 1) {
-                        $('#edit-row').prop('disabled', true);
-                    }
-                });
-            }
-
-            $.ajax({
-                url: "<?= $block->getUrl('lazyspeaker/index/loadpackages'); ?>",
-                type: 'POST',
-                data: dataAjax,
-                success: function (data) {
-                    $.map(data.items, function (item) {
-                        tableHtml += getRowsTable(item);
-                    });
-                    $("#all-words").html(tableHtml);
-                    table = createTable();
-                    tableFunction(table);
-                    //edit row click
-                    $("#edit-row").on( "click", function(e) {
-                        rowsEdit = table.row({selected: true}).data()[2];
-                        window.location.href = url.build("lazyspeaker/index/editpackage/package/" + rowsEdit);
-                    });
-                },
-                error: function (error) {
-                    console.log(JSON.stringify(error));
+            // Add event listener for opening and closing details
+            $('#allPosts tbody').on('click', 'td.details-control', function (e) {
+                var tr = $(this).closest('tr');
+                var row = table.row( tr );
+                if ( row.child.isShown() ) {
+                    // This row is already open - close it
+                    // row.child.hide();
+                    // tr.removeClass('shown');
+                }
+                else {
+                    // Open this row
+                    row.child( format(row.data()) ).show();
+                    tr.addClass('shown');
                 }
             });
-            //load Ajax
-
-            //create post
-            $("#create-post").on( "click", function(e) {
-                $.ajax({
-                    url: "<?= $block->getUrl('lazyspeaker/index/loadwords'); ?>",
-                    type: 'POST',
-                    data: {'create_post': idSelected},
-                    success: function () {
-                        window.location.href = url.build("lazyspeaker/index/createpost/");
-                    },
-                    error: function (error) {
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Oops...',
-                            text: 'Something went wrong. Please try again!'
-                        });
-                    }
-                });
+            //click to get value of packageData
+            $('td.details-control').click();
+            //event view packageData
+            $.map(packageData, function (packData) {
+                viewPackageData(packData['id'], packData['package'], packData['package_id']);
             });
-            //create post
-
-
-            //sweetAlert button Delete //delete row click
-            $("#delete-row").on( "click", function(e) {
-                Swal.fire({
-                    title: "Are you sure about deleting selected records?",
-                    type: "info",
-                    width: 400,
-                    showCancelButton: true,
-                    confirmButtonText: "Yes, Delete",
-                    confirmButtonColor: "#ff0055",
-                    cancelButtonColor: "#999999",
-                    reverseButtons: true,
-                    focusConfirm: false,
-                    focusCancel: true
-                }).then(function(isConfirm) {
-                    if (isConfirm.isConfirmed) {
-                        Swal.fire({
-                            title: 'Please Wait!',
-                            html: 'deleting...',// add html attribute if you want or remove
-                            allowOutsideClick: false,
-                            showConfirmButton: false,
-                            allowEscapeKey: false,
-                            allowEnterKey: false,
-                            onBeforeOpen: () => {
-                                Swal.showLoading()
-                            },
-                        });
-                        $.ajax({
-                            url: "<?= $block->getUrl('lazyspeaker/index/delete'); ?>",
-                            type: 'POST',
-                            data: {'delete_package': idSelected},
-                            success: function () {
-                                table.rows({selected: true}).remove().draw();
-                                Swal.fire({
-                                    icon: 'success',
-                                    title: 'Delete Successfully!'
-                                });
-                            },
-                            error: function (error) {
-                                Swal.fire({
-                                    icon: 'error',
-                                    title: 'Oops...',
-                                    text: 'Something went wrong. Please try again!'
-                                });
-                            }
-                        });
-                    }
-                });
+            $.map(arrayLikeButton, function (like) {
+                likeEvent(like['id'], like['total_like']);
             });
-
-
         });
     });
 </script>
 
+<div class="container">
+    <table id="allPosts" class="display" style="width:100%">
+        <thead>
+        <tr>
+            <th></th>
+            <th>Title</th>
+        </tr>
+        </thead>
+        <tfoot>
+        <tr>
+            <th></th>
+            <th>Title</th>
+        </tr>
+        </tfoot>
+    </table>
+</div>

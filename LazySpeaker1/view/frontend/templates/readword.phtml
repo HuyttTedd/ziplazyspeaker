@@ -1,0 +1,281 @@
+<?php
+use Mageplaza\LazySpeaker\Block\ProcessForm;
+
+/** @var ProcessForm $block */
+    //gio noi thanh chuoi va ghep de hien thi
+    $dataToRead = $block->helperData->getDataWordsToRead();
+    $lang = [];
+    foreach ($block->helperData->getLang() as $key => $value) {
+        $lang[$value[0]] = $value[1];
+    }
+    $selectedOption = $dataToRead[count($dataToRead) - 1];
+    array_pop($dataToRead);
+?>
+
+<style>
+    td.details-control {
+        background: url('https://datatables.net/examples/resources/details_open.png') no-repeat center center;
+        cursor: pointer;
+    }
+    tr.shown td.details-control {
+        background: url('https://datatables.net/examples/resources/details_close.png') no-repeat center center;
+    }
+
+    .child-row {
+        width: 20%;
+    }
+
+    .button_play {
+        width: 2%;
+    }
+
+
+</style>
+<script>
+    require([
+        'jquery',
+        'responsivevoice',
+        'jquery/ui',
+        'datatables',
+        'datatables_select',
+        'datatables_rowreorder',
+    ], function($){
+        $(document).ready(function() {
+            var selectedOption = <?= json_encode($selectedOption) ?>;
+            var dataTable = <?= json_encode($dataToRead) ?>;
+            var lang = <?= json_encode($lang) ?>;
+            var allWordsToRead = [];
+            var pairIdvsWord = [];
+            var linking, arrLink = [];
+            var flag = 0;
+            selectedOption = selectedOption.split(',');
+
+            function eventRead(id, sentence, lang) {
+                return $('#' + id).on('click', function () {
+                    responsiveVoice.speak(sentence, lang);
+                });
+            }
+
+            function printIfInclude(option, data) {
+                let bodyTable = '';
+                if(option.includes("spelling")) {
+                    bodyTable += '<tr>'+
+                        '<td class="child-row">Phonetics</td>'+
+                        '<td class="button_play"></td>'+
+                        '<td>Chua co</td>'+
+                        '</tr>'
+                }
+                let id;
+                option.forEach(function (item) {
+                   if(item != "spelling" && data[item]) {
+                       id = item + '_' + data['id'];
+                       pairIdvsWord = [id, data[item], lang[item]];
+                       allWordsToRead.push(pairIdvsWord);
+                       bodyTable += '<tr>'+
+                           '<td class="child-row">'+item+'</td>'+
+                           '<td class="button_play"><button id='+id+'><i class="fas fa-play-circle"></i></button></td>'+
+                           '<td>'+data[item]+'</td>'+
+                           '</tr>';
+                   }
+                });
+                return bodyTable;
+            }
+            function format ( d ) {
+                // `d` is the original data object for the row
+                let bodyChild = printIfInclude(selectedOption, d);
+                return '<table cellpadding="5" cellspacing="0" border="1">' +
+                    bodyChild
+                    + '</table>';
+            }
+
+            var table = $('#example').DataTable({
+                "data": dataTable,
+                "columns": [
+                    {
+                        "className":      'details-control',
+                        "orderable":      false,
+                        "data":           null,
+                        "defaultContent": ''
+                    },
+                    { "data": "word" }
+                ],
+                columnDefs: [
+                    { "width": "5%", "targets": 0 },
+                    { "orderable": false, "targets": [0, 1] }
+                ],
+                "order": [[1, 'asc']]
+            });
+
+            // Add event listener for opening and closing details
+            $('#example tbody').on('click', 'td.details-control', function () {
+                var tr = $(this).closest('tr');
+                var row = table.row( tr );
+
+                if ( row.child.isShown() ) {
+                    // This row is already open - close it
+                    row.child.hide();
+                    tr.removeClass('shown');
+                }
+                else {
+                    // Open this row
+                    row.child( format(row.data()) ).show();
+                    tr.addClass('shown');
+                }
+            });
+            //khong apply duoc event neu nhu ko open
+            $('td.details-control').click();
+            $('td.details-control').click();
+            //khong apply duoc event neu nhu ko open
+
+            $.map(allWordsToRead, function (item) {
+                eventRead(item[0], item[1], item[2]);
+            });
+
+            // console.log(allWordsToRead);
+            // add matching words
+            var matching, matchMainWord = [], matchMeaing = [], matchSentence = [], matchMeanSentence = [], note = [];
+            if(allWordsToRead) {
+                $.map(allWordsToRead, function (item) {
+                    if(item[0].indexOf('word') !== -1 && item[0].indexOf('word_class') === -1) {
+                        matchMainWord.push(allWordsToRead.indexOf(item));
+                    }
+                });
+                if(matchMainWord) {
+                    flag = 0;
+                    $.map(matchMainWord, function (item) {
+                        linking = "Từ thứ " + (matchMainWord.indexOf(item) + 1);
+                        item = item + flag;
+                        //custom them giong doc cho nay
+                        arrLink = ['linking', linking, "Vietnamese Female"];
+                        allWordsToRead.splice(item, 0, arrLink);
+                        flag++;
+                    });
+                }
+                $.map(allWordsToRead, function (item) {
+                    if(item[0].indexOf('meaning') !== -1 && item[0].indexOf('sentence') === -1) {
+                        matchMeaing.push(allWordsToRead.indexOf(item));
+                    }
+                });
+                if(matchMeaing) {
+                    flag = 0;
+                    $.map(matchMeaing, function (item) {
+                        linking = "Nghĩa là";
+                        item = item + flag;
+                        arrLink = ['linking', linking, "Vietnamese Female"];
+                        allWordsToRead.splice(item, 0, arrLink);
+                        flag++;
+                    });
+                }
+
+                $.map(allWordsToRead, function (item) {
+                    if(item[0].indexOf('sentence_example') !== -1) {
+                        matchSentence.push(allWordsToRead.indexOf(item));
+                    }
+                });
+                if(matchSentence) {
+                    flag = 0;
+                    $.map(matchSentence, function (item) {
+                        linking = "Câu ví dụ";
+                        item = item + flag;
+                        arrLink = ['linking', linking, "Vietnamese Female"];
+                        allWordsToRead.splice(item, 0, arrLink);
+                        flag++;
+                    });
+                }
+
+
+                $.map(allWordsToRead, function (item) {
+                    if(item[0].indexOf('sentence_meaning') !== -1) {
+                        matchMeanSentence.push(allWordsToRead.indexOf(item));
+                    }
+                });
+                if(matchMeanSentence) {
+                    flag = 0;
+                    $.map(matchMeanSentence, function (item) {
+                        linking = "Nghĩa câu ví dụ";
+                        item = item + flag;
+                        arrLink = ['linking', linking, "Vietnamese Female"];
+                        allWordsToRead.splice(item, 0, arrLink);
+                        flag++;
+                    });
+                }
+
+                $.map(allWordsToRead, function (item) {
+                    if(item[0].indexOf('note') !== -1) {
+                        note.push(allWordsToRead.indexOf(item));
+                    }
+                });
+                if(note) {
+                    flag = 0;
+                    $.map(note, function (item) {
+                        linking = "Ghi chú";
+                        item = item + flag;
+                        arrLink = ['linking', linking, "Vietnamese Female"];
+                        allWordsToRead.splice(item, 0, arrLink);
+                        flag++;
+                    });
+                }
+
+
+                console.log(allWordsToRead);
+            }
+
+            //Start Read
+            function readSequence(allWordsToRead, index) {
+                if(allWordsToRead.length - 1 === index) {
+                    return true;
+                } else {
+                    index++;
+                    return responsiveVoice.speak(allWordsToRead[index][1], allWordsToRead[index][2],
+                                                {onend: () => readSequence(allWordsToRead, index)});
+                }
+            }
+
+            function readRepeat(allWordsToRead, index) {
+                if(allWordsToRead.length - 1 === index) {
+                    index = 0;
+                    return responsiveVoice.speak(allWordsToRead[index][1], allWordsToRead[index][2],
+                        {onend: () => readRepeat(allWordsToRead, index)});
+                } else {
+                    index++;
+                    return responsiveVoice.speak(allWordsToRead[index][1], allWordsToRead[index][2],
+                        {onend: () => readRepeat(allWordsToRead, index)});
+                }
+            }
+
+            $('#start_read').on('click', function () {
+                readSequence(allWordsToRead, -1);
+            });
+            $('#read_repeat').on('click', function () {
+                readRepeat(allWordsToRead, -1);
+            });
+            $('#pause').on('click', function () {
+                responsiveVoice.pause();
+            });
+            $('#resume').on('click', function () {
+                responsiveVoice.resume();
+            });
+        });
+    });
+</script>
+
+<button id="start_read">Start Read!</button>
+<button id="read_repeat">Read Repeat!</button>
+<button id="pause">Pause</button>
+<button id="resume">Resume</button>
+<table id="example" class="display" style="width:100%">
+    <thead>
+        <tr>
+            <th></th>
+            <th>Word</th>
+        </tr>
+    </thead>
+    <tfoot>
+        <tr>
+            <th></th>
+            <th>Word</th>
+        </tr>
+    </tfoot>
+</table>
+
+

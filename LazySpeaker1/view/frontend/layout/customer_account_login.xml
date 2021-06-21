@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <body>
+        <referenceContainer name="header.container">
+            <referenceBlock name="top.search" remove="true"/>
+        </referenceContainer>
+        <referenceBlock name="minicart" remove="true" />
+        <referenceContainer name="content">
+            <referenceBlock name="sale.reorder.sidebar" remove="true"/>
+            <referenceBlock name="page.main.title" remove="true" />
+            <referenceBlock name="copyright" remove="true"/>
+            <referenceBlock name="footer" remove="true"/>
+            <referenceBlock name="customer_form_register" remove="true"/>
+
+            <referenceContainer name="customer.login.container">
+                <block class="Magento\Customer\Block\Form\Login\Info"
+                        name="customer.new"
+                       template="Mageplaza_LazySpeaker::lazynewcustomer.phtml"/>
+            </referenceContainer>
+        </referenceContainer>
+    </body>
+</page>
