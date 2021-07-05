@@ -1,0 +1,231 @@
+<?php
+use Mageplaza\LazySpeaker\Block\ProcessForm;
+/** @var ProcessForm $block */
+$dataPackage = $block->getShareDataPackage();
+//$writer = new \Zend\Log\Writer\Stream(BP . '/var/log/test.log');
+//$logger = new \Zend\Log\Logger();
+//$logger->addWriter($writer);
+//$logger->info($dataPackage);
+?>
+
+<style>
+    .btn {
+        width: 20rem !important;
+        border: none;
+        height: 5rem;
+    }
+
+    td.details-control {
+        background: url('https://datatables.net/examples/resources/details_open.png') no-repeat center center;
+        cursor: pointer;
+    }
+    tr.shown td.details-control {
+        background: url('https://datatables.net/examples/resources/details_close.png') no-repeat center center;
+    }
+
+    td.details-control-word {
+        background: url('https://datatables.net/examples/resources/details_open.png') no-repeat center center;
+        cursor: pointer;
+    }
+    tr.shown td.details-control-word {
+        background: url('https://datatables.net/examples/resources/details_close.png') no-repeat center center;
+    }
+
+    .preview {
+        margin-top: 1rem;
+    }
+
+    .child-row {
+        width: 20%;
+    }
+
+    #confirm {
+        display: none;
+    }
+</style>
+
+<div class="row">
+    <div class="col-4">
+        <form name="addData" method="post" id="addData" class="form"
+              action="<?= $block->getPostFormAction(); ?>"
+              data-hasrequired="<?= $block->escapeHtmlAttr(__('* Required Fields')) ?>"
+              data-mage-init='{"validation":{}}' enctype="multipart/form-data">
+            <input name="form_key" type="hidden" value="<?php echo $block->getFormKey();?>">
+            <fieldset class="fieldset">
+                <legend class="legend">
+                    <span><?= $block->escapeHtmlAttr(__('Add new post')) ?></span>
+                </legend>
+                <fieldset class="fieldset row">
+                    <div class="fields col-4 bg-primary">
+                        <div class="field name required">
+                            <label class="label" for="title"><span><?= $block->
+                                    escapeHtmlAttr(__('Title')) ?></span></label>
+                            <div class="control">
+                                <input name="post_title" id="title" title="Title" class="input-text" type="text"
+                                       data-validate="{required:true, 'validate-length':true}" maxlength="100">
+                            </div>
+                        </div>
+                        <div class="field name">
+                            <label class="label" for="title">
+                                <span><?= $block->escapeHtmlAttr(__('Content')) ?></span>
+                            </label>
+                            <div class="control">
+                                <textarea name="content" id="content"
+                                          title="Meaning Example Sentence" class="input-text"
+                                          type="textarea" rows="4" cols="50""></textarea>
+                            </div>
+                        </div>
+                        <div class="field name">
+                            <label class="label" for="title">
+                                <span><?= $block->escapeHtmlAttr(__('Xem chi tiết')) ?></span>
+                            </label>
+                            <div class="control">
+                                <div id="view-package"></div>
+                            </div>
+                        </div>
+                    </div>
+                </fieldset>
+            </fieldset>
+            <input id="package_ids" name="package_ids" type="hidden">
+            <button id="confirm"></button>
+            <div class="actions-toolbar">
+                <div class="primary">
+                    <button id="submit" type="submit" class="action submit primary" title="Save"><span><?= $block->
+                            escapeHtmlAttr(__('Save')) ?></span></button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+
+<script>
+    require([
+        'jquery',
+        'mage/url',
+        'sweetalert2',
+        'datatables',
+        'datatables_select',
+        'datatables_rowreorder'
+    ], function($, url, Swal){
+        $(document).ready( function () {
+            var dataPackage = <?= json_encode($dataPackage) ?>;
+            var buttonView, table, packId, packLabel, idPackText, allPackIds = [];
+
+            function viewSharePackage(id, dataTable) {
+                return $("#" + id).on( "click", function(e) {
+                    e.preventDefault();
+                    Swal.fire({
+                        width: 900,
+                        html: `<table id="example" class="display" style="width:100%">
+                                    <thead>
+                                        <tr>
+                                            <th></th>
+                                            <th>Word</th>
+                                        </tr>
+                                    </thead>
+                                    <tfoot>
+                                        <tr>
+                                            <th></th>
+                                            <th>Word</th>
+                                        </tr>
+                                    </tfoot>
+                                </table>`
+                    });
+
+                    table = $('#example').DataTable({
+                        "data": dataTable,
+                        "columns": [
+                            {
+                                "className":      'details-control',
+                                "orderable":      false,
+                                "data":           null,
+                                "defaultContent": ''
+                            },
+                            { "data": "word" }
+                        ],
+                        columnDefs: [
+                            { "width": "5%", "targets": 0 },
+                            { "orderable": false, "targets": [0, 1] }
+                        ],
+                        "order": [[1, 'asc']],
+                        "pageLength": 2,
+                        "lengthChange" : false,
+                        "ordering": false,
+                        "pagingType": "full_numbers"
+                    });
+
+                    //data format
+                    function format ( data ) {
+                        // `d` is the original data object for the row
+                        let bodyChild = '<tr>'+
+                            '<td class="child-row">Meaning</td>'+
+                            '<td>'+data['meaning']+'</td>'+
+                            '</tr>'+
+                            '<tr>'+
+                            '<td class="child-row">Example Sentence</td>'+
+                            '<td>'+data['sentence_example']+'</td>'+
+                            '</tr>'+
+                            '<tr>'+
+                            '<td class="child-row">Sentence\'s Meaning</td>'+
+                            '<td>'+data['sentence_meaning']+'</td>'+
+                            '</tr>'+
+                            '<tr>'+
+                            '<td class="child-row">Word Class</td>'+
+                            '<td>'+data['word_class']+'</td>'+
+                            '</tr>';
+                        return '<table cellpadding="5" cellspacing="0" border="1">' +
+                            bodyChild
+                            + '</table>';
+                    }
+
+                    // Add event listener for opening and closing details
+                    $('#example tbody').on('click', 'td.details-control', function () {
+                        var tr = $(this).closest('tr');
+                        var row = table.row( tr );
+                        if ( row.child.isShown() ) {
+                            // This row is already open - close it
+                            row.child.hide();
+                            tr.removeClass('shown');
+                        }
+                        else {
+                            // Open this row
+                            row.child( format(row.data()) ).show();
+                            tr.addClass('shown');
+                        }
+                    });
+                });
+            }
+
+            $.map(dataPackage, function (pack) {
+                console.log(dataPackage);
+                // pack[pack.length - 3]: idpack
+                // pack[pack.length - 2]: namepack + idpack
+                // pack[pack.length - 1]: namepack
+                packLabel = pack[pack.length - 1];
+                idPackText = pack[pack.length - 2];
+                packId = pack[pack.length - 3];
+                allPackIds.push(packId);
+                buttonView = '<div class="preview"><button class="btn" id='+idPackText+'>'+packLabel+'</button></div>';
+                $("#view-package").append(buttonView);
+                pack.splice(pack.length - 3, 3);
+                // console.log(pack);
+                viewSharePackage(idPackText, pack);
+            });
+
+            $('#submit').on('click', function (e) {
+                e.preventDefault();
+                //
+                if($("#package_ids").val(allPackIds.join())) {
+                    $("#confirm").click();
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Oops...',
+                        text: 'Something went wrong. Please try again!'
+                    });
+                }
+            });
+        });
+    });
+</script>
