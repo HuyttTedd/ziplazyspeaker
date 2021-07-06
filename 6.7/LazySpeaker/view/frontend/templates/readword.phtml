@@ -1,0 +1,414 @@
+<?php
+use Mageplaza\LazySpeaker\Block\ProcessForm;
+
+/** @var ProcessForm $block */
+    //gio noi thanh chuoi va ghep de hien thi
+    $dataToRead = $block->helperData->getDataWordsToRead();
+    $lang = [];
+    $writer = new \Zend\Log\Writer\Stream(BP . '/var/log/test.log');
+    $logger = new \Zend\Log\Logger();
+    $logger->addWriter($writer);
+    $logger->info($block->helperData->getLang());
+    foreach ($block->helperData->getLang() as $key => $value) {
+        $lang[$value[0]] = $value[1];
+    }
+
+
+    $selectedOption = $dataToRead[count($dataToRead) - 1];
+    array_pop($dataToRead);
+?>
+<h1>Đọc từ nào!</h1>
+<style>
+    td.details-control {
+        background: url('https://datatables.net/examples/resources/details_open.png') no-repeat center center;
+        cursor: pointer;
+    }
+    tr.shown td.details-control {
+        background: url('https://datatables.net/examples/resources/details_close.png') no-repeat center center;
+    }
+
+    .child-row {
+        width: 20%;
+    }
+
+    .button_play {
+        width: 2%;
+    }
+
+    select.custom-select {
+        width: 50px !important;
+    }
+
+    #read-selections{
+        margin-top: 30px;
+        margin-bottom: 30px;
+    }
+
+    #rate, #pitch {
+        width: 50px !important;
+    }
+
+    .options-read {
+        width: 10rem;
+    }
+
+    .main-actions {
+        width: 15rem;
+        margin-top: 5rem;
+    }
+
+    #pause, #resume {
+        display: none;
+    }
+
+
+</style>
+<script>
+    require([
+        'jquery',
+        'mage/url',
+        'responsivevoice',
+        'jquery/ui',
+        'datatables',
+        'datatables_select',
+        'datatables_rowreorder',
+    ], function($, url){
+        $(document).ready(function() {
+            var selectedOption = <?= json_encode($selectedOption) ?>;
+            var dataTable = <?= json_encode($dataToRead) ?>;
+            var lang = <?= json_encode($lang) ?>;
+            var allWordsToRead = [];
+            var pairIdvsWord = [];
+            var linking, arrLink = [];
+            var flag = 0;
+            selectedOption = selectedOption.split(',');
+
+            //custom word class
+            var wordClassObj = {
+              'n': 'Danh từ',
+              'v': 'động từ',
+              'adj': 'tính từ',
+              'adv': 'trạng từ',
+              'pre': 'giới từ',
+              'others': 'khác',
+              'none': 'không có'
+            };
+
+            function eventRead(id, sentence, lang) {
+                return $('#' + id).on('click', function () {
+                    responsiveVoice.speak(sentence, lang);
+                });
+            }
+
+            function printIfInclude(option, data) {
+                let bodyTable = '';
+                if(option.includes("spelling")) {
+                    bodyTable += '<tr>'+
+                        '<td class="child-row">Phonetics</td>'+
+                        '<td class="button_play"></td>'+
+                        '<td>Chua co</td>'+
+                        '</tr>'
+                }
+                let id;
+                let wordClassLabel;
+                option.forEach(function (item) {
+                   if(item != "spelling" && data[item]) {
+                       id = item + '_' + data['id'];
+                       //custom word class
+                       wordClassLabel = '';
+                       if(id.indexOf('word_class_') !== -1 && wordClassObj.hasOwnProperty(data[item])) {
+                           wordClassLabel = wordClassObj[data[item]];
+                       }
+                       if(!wordClassLabel) {
+                           wordClassLabel = data[item];
+                       }
+                       //custom word class
+                       pairIdvsWord = [id, wordClassLabel, lang[item]];
+                       allWordsToRead.push(pairIdvsWord);
+                       bodyTable += '<tr>'+
+                           '<td class="child-row">'+item+'</td>'+
+                           '<td class="button_play"><button id='+id+' class="single-read"><i class="fas fa-play-circle"></i></button></td>'+
+                           '<td>' + wordClassLabel + '</td>'+
+                           '</tr>';
+                   }
+                });
+                return bodyTable;
+            }
+            function format ( d ) {
+                // `d` is the original data object for the row
+                let bodyChild = printIfInclude(selectedOption, d);
+                return '<table cellpadding="5" cellspacing="0" border="1">' +
+                    bodyChild
+                    + '</table>';
+            }
+
+            var table = $('#example').DataTable({
+                "data": dataTable,
+                "columns": [
+                    {
+                        "className":      'details-control',
+                        "orderable":      false,
+                        "data":           null,
+                        "defaultContent": ''
+                    },
+                    { "data": "word" }
+                ],
+                columnDefs: [
+                    { "width": "5%", "targets": 0 },
+                    { "orderable": false, "targets": [0, 1] }
+                ],
+                "order": [[1, 'asc']]
+            });
+
+            // Add event listener for opening and closing details
+            $('#example tbody').on('click', 'td.details-control', function () {
+                var tr = $(this).closest('tr');
+                var row = table.row( tr );
+
+                if ( row.child.isShown() ) {
+                    // This row is already open - close it
+                    row.child.hide();
+                    tr.removeClass('shown');
+                }
+                else {
+                    // Open this row
+                    row.child( format(row.data()) ).show();
+                    tr.addClass('shown');
+                }
+            });
+            //khong apply duoc event neu nhu ko open
+            $('td.details-control').click();
+            // $('td.details-control').click();
+            //khong apply duoc event neu nhu ko open
+
+            $.map(allWordsToRead, function (item) {
+                eventRead(item[0], item[1], item[2]);
+            });
+
+            // console.log(allWordsToRead);
+            // add matching words
+            var matching, matchMainWord = [], matchWordClass = [], matchMeaing = [], matchSentence = [], matchMeanSentence = [], note = [];
+            if(allWordsToRead) {
+                $.map(allWordsToRead, function (item) {
+                    if(item[0].indexOf('word') !== -1 && item[0].indexOf('word_class') === -1) {
+                        matchMainWord.push(allWordsToRead.indexOf(item));
+                    }
+                });
+                if(matchMainWord) {
+                    flag = 0;
+                    $.map(matchMainWord, function (item) {
+                        linking = "Từ thứ " + (matchMainWord.indexOf(item) + 1);
+                        item = item + flag;
+                        //custom them giong doc cho nay
+                        arrLink = ['linking', linking, "Vietnamese Female"];
+                        allWordsToRead.splice(item, 0, arrLink);
+                        flag++;
+                    });
+                }
+
+                //custom word class
+                $.map(allWordsToRead, function (item) {
+                    if(item[0].indexOf('word_class_') !== -1) {
+                        matchWordClass.push(allWordsToRead.indexOf(item));
+                    }
+                });
+                if(matchWordClass) {
+                    flag = 0;
+                    $.map(matchWordClass, function (item) {
+                        linking = "từ loại: ";
+                        item = item + flag;
+                        //custom them giong doc cho nay
+                        arrLink = ['linking', linking, "Vietnamese Female"];
+                        allWordsToRead.splice(item, 0, arrLink);
+                        flag++;
+                    });
+                }
+                //custom word class
+
+                $.map(allWordsToRead, function (item) {
+                    if(item[0].indexOf('meaning') !== -1 && item[0].indexOf('sentence') === -1) {
+                        matchMeaing.push(allWordsToRead.indexOf(item));
+                    }
+                });
+                if(matchMeaing) {
+                    flag = 0;
+                    $.map(matchMeaing, function (item) {
+                        linking = "Nghĩa là";
+                        item = item + flag;
+                        arrLink = ['linking', linking, "Vietnamese Female"];
+                        allWordsToRead.splice(item, 0, arrLink);
+                        flag++;
+                    });
+                }
+
+                $.map(allWordsToRead, function (item) {
+                    if(item[0].indexOf('sentence_example') !== -1) {
+                        matchSentence.push(allWordsToRead.indexOf(item));
+                    }
+                });
+                if(matchSentence) {
+                    flag = 0;
+                    $.map(matchSentence, function (item) {
+                        linking = "Câu ví dụ";
+                        item = item + flag;
+                        arrLink = ['linking', linking, "Vietnamese Female"];
+                        allWordsToRead.splice(item, 0, arrLink);
+                        flag++;
+                    });
+                }
+
+                $.map(allWordsToRead, function (item) {
+                    if(item[0].indexOf('sentence_meaning') !== -1) {
+                        matchMeanSentence.push(allWordsToRead.indexOf(item));
+                    }
+                });
+                if(matchMeanSentence) {
+                    flag = 0;
+                    $.map(matchMeanSentence, function (item) {
+                        linking = "Nghĩa câu ví dụ";
+                        item = item + flag;
+                        arrLink = ['linking', linking, "Vietnamese Female"];
+                        allWordsToRead.splice(item, 0, arrLink);
+                        flag++;
+                    });
+                }
+
+                $.map(allWordsToRead, function (item) {
+                    if(item[0].indexOf('note') !== -1) {
+                        note.push(allWordsToRead.indexOf(item));
+                    }
+                });
+                if(note) {
+                    flag = 0;
+                    $.map(note, function (item) {
+                        linking = "Ghi chú";
+                        item = item + flag;
+                        arrLink = ['linking', linking, "Vietnamese Female"];
+                        allWordsToRead.splice(item, 0, arrLink);
+                        flag++;
+                    });
+                }
+            }
+
+            //Start Read
+            let rate = $('#rate').val();
+            let pitch = $('#pitch').val();
+            function readSequence(allWordsToRead, index, rate, pitch) {
+                if(allWordsToRead.length - 1 === index) {
+                    $("#start_read").prop('disabled', false);
+                    $("#read_repeat").show();
+                    $(".single-read").prop('disabled', false);
+                    return true;
+                } else {
+                    index++;
+                    return responsiveVoice.speak(allWordsToRead[index][1], allWordsToRead[index][2],
+                                                {rate: rate, pitch: pitch, onend: () => readSequence(allWordsToRead, index)});
+                }
+            }
+
+            function readRepeat(allWordsToRead, index) {
+                if(allWordsToRead.length - 1 === index) {
+                    index = 0;
+                    return responsiveVoice.speak(allWordsToRead[index][1], allWordsToRead[index][2],
+                        {rate: rate, pitch: pitch, onend: () => readRepeat(allWordsToRead, index)});
+                } else {
+                    index++;
+                    return responsiveVoice.speak(allWordsToRead[index][1], allWordsToRead[index][2],
+                        {rate: rate, pitch: pitch, onend: () => readRepeat(allWordsToRead, index)});
+                }
+            }
+
+            //reload
+            $('#reload').on('click', function () {
+                window.location.href = url.build("lazyspeaker/index/readword");
+            });
+            //reload
+
+            //read repeat
+            $('#read_repeat').on('click', function () {
+                readRepeat(allWordsToRead, -1, rate, pitch);
+                $("#rate").prop('disabled', true);
+                $("#pitch").prop('disabled', true);
+                $("#read_repeat").prop('disabled', true);
+                $(".single-read").prop('disabled', true);
+                $("#pause").show();
+                $("#start_read").hide();
+            });
+            //read repeat
+
+            $('#start_read').on('click', function () {
+                readSequence(allWordsToRead, -1, rate, pitch);
+                $("#rate").prop('disabled', true);
+                $("#pitch").prop('disabled', true);
+                $(".single-read").prop('disabled', true);
+                $("#pause").show();
+                $("#read_repeat").hide();
+            });
+            $('#start_read').on('click', function () {
+                $("#start_read").prop('disabled', true);
+            });
+
+            $('#pause').on('click', function () {
+                responsiveVoice.pause();
+                $("#rate").prop('disabled', false);
+                $("#pitch").prop('disabled', false);
+                $("#resume").show();
+            });
+            var interval
+            $('#pause').on('click', function () {
+                $("#pause").hide();
+                //tao 2 object responsive voice
+                // $(".single-read").prop('disabled', false);
+                interval = setInterval(function(){ responsiveVoice.pause(); }, 20000);
+            });
+            $('#resume').on('click', function () {
+                clearInterval(interval);
+                responsiveVoice.resume();
+                $("#rate").prop('disabled', true);
+                $("#pitch").prop('disabled', true);
+            });
+            $('#resume').on('click', function () {
+                $("#pause").show();
+                $("#resume").hide();
+            });
+
+            // var interval = setInterval(function(){ alert("Hello"); }, 3000);
+        });
+    });
+</script>
+
+<div id="reload">
+    <button id="reload" class="main-actions">Load lại trang</button>
+</div>
+<button class="main-actions" id="start_read">Bắt đầu đọc</button>
+<button class="main-actions" id="read_repeat">Đọc lặp lại</button>
+<button class="main-actions" id="pause">Dừng</button>
+<button class="main-actions" id="resume">Tiếp tục</button>
+
+<table id="read-selections">
+    <tr>
+        <td class="options-read">Tốc độ đọc: </td>
+        <td><input type="number" id="rate" step="any" value="1.0"></td>
+    </tr>
+    <tr>
+        <td class="options-read">Cao độ: </td>
+        <td><input type="number" id="pitch" step="any" value="1.0"></td>
+    </tr>
+</table>
+
+<table id="example" class="display" style="width:100%">
+    <thead>
+        <tr>
+            <th></th>
+            <th>Word</th>
+        </tr>
+    </thead>
+    <tfoot>
+        <tr>
+            <th></th>
+            <th>Word</th>
+        </tr>
+    </tfoot>
+</table>
+
+

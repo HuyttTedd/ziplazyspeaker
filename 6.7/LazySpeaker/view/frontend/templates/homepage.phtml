@@ -1,0 +1,94 @@
+<style>
+    .item {
+        width: 100%;
+    }
+
+    .item img {
+        width: 100%;
+        height: 260px;
+    }
+
+    .child-title {
+        font-family: 'Helvetica';
+        text-align: center;
+        word-break: break-word;
+        font-weight: bold;
+        color: #00D3AA;
+    }
+
+    .big-item {
+        margin-top: 10rem;
+    }
+    @media only screen and (max-width: 800px) {
+        .item img {
+            height: 200px;
+        }
+    }
+</style>
+
+<h1 class="child-title">Phương pháp học đơn giản: Thêm từ, nghe từ và ghi nhớ</h1>
+<div class="owl-carousel owl-theme">
+    <div class="item">
+        <img src="https://i.imgur.com/5uTnj3V.png" alt="">
+    </div>
+    <div class="item">
+        <img src="https://i.imgur.com/p9iEOun.jpeg" alt="">
+    </div>
+    <div class="item">
+        <img src="https://i.imgur.com/2iUf59c.png" alt="">
+    </div>
+    <div class="item">
+        <img src="https://i.imgur.com/4pzHeWI.jpeg" alt="">
+    </div>
+    <div class="item">
+        <img src="https://i.imgur.com/uc8JMzO.jpeg" alt="">
+    </div>
+    <div class="item">
+        <img src="https://i.imgur.com/PnhwH3x.jpeg" alt="">
+    </div>
+</div>
+
+<div id="big-img">
+    <div class="big-item">
+        <h1 class="child-title">Hỗ trợ lên đến 51 ngôn ngữ</h1>
+        <img src="https://i.imgur.com/6dgE5jI.png" alt="">
+    </div>
+    <div class="big-item">
+        <h1 class="child-title">Không cần phải đọc cho hại mắt, chỉ cần nghe ^.^</h1>
+        <img src="https://i.imgur.com/FVBwqJL.png" alt="">
+    </div>
+    <div class="big-item">
+        <h1 class="child-title">Chia sẻ từ của mình đến mọi người</h1>
+        <img src="https://i.imgur.com/m8uUXM5.png" alt="">
+    </div>
+</div>
+
+<script>
+    require([
+        'jquery',
+        'owlcarousel'
+    ], function($) {
+        $(document).ready(function () {
+            $('.owl-carousel').owlCarousel({
+                loop:true,
+                margin:10,
+                nav:true,
+                responsiveClass:true,
+                autoplay:true,
+                autoplayTimeout:1900,
+                autoplayHoverPause:true,
+                responsive:{
+                    0:{
+                        items:1
+                    },
+                    600:{
+                        items:2
+                    },
+                    1000:{
+                        items:3
+                    }
+                }
+            })
+        });
+    });
+</script>
