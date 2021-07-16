@@ -1,0 +1,9 @@
+<?php
+use Mageplaza\LazySpeaker\Block\Adminhtml\Manage;
+/** @var Manage $block */
+$postData = $block->getDataBelongPost();
+
+$writer = new \Zend\Log\Writer\Stream(BP . '/var/log/test.log');
+$logger = new \Zend\Log\Logger();
+$logger->addWriter($writer);
+$logger->info($postData);

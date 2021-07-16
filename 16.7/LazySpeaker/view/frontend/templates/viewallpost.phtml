@@ -1,0 +1,389 @@
+<?php
+use Mageplaza\LazySpeaker\Block\ProcessForm;
+/** @var ProcessForm $block */
+$data = $block->helperData->getPostsData();
+$userId = $block->helperData->getCustomerId();
+$allLikedPost = $block->helperData->getAllLikedPostIds($userId);
+$writer = new \Zend\Log\Writer\Stream(BP . '/var/log/test.log');
+$logger = new \Zend\Log\Logger();
+$logger->addWriter($writer);
+$logger->info($allLikedPost);
+?>
+<style>
+    select.custom-select {
+        width: 50px !important;
+    }
+
+    td.details-control {
+        background: url('https://datatables.net/examples/resources/details_open.png') no-repeat center center;
+        cursor: pointer;
+    }
+    tr.shown td.details-control {
+        background: url('https://upload.wikimedia.org/wikipedia/commons/f/ff/Green_icon.svg') no-repeat center center;
+    }
+
+    td.details-control-word {
+        background: url('https://datatables.net/examples/resources/details_open.png') no-repeat center center;
+        cursor: pointer;
+    }
+    tr.shown td.details-control-word {
+        background: url('https://upload.wikimedia.org/wikipedia/commons/f/ff/Green_icon.svg') no-repeat center center;
+    }
+
+    .like {
+        cursor: pointer;
+    }
+
+    .count-like {
+        text-align: center;
+    }
+
+    .like-text {
+        font-size: 1.5rem;
+        margin-left: 1rem;
+    }
+
+    .like:hover {
+        color: green;
+    }
+
+    .pack {
+        margin: 2rem;
+        width: 15rem;
+    }
+
+    .child-row {
+        width: 30%;
+        text-align: center;
+    }
+
+    .count-like {
+        margin-right: 0;
+    }
+</style>
+
+<script>
+    require([
+        'jquery',
+        'mage/url',
+        'sweetalert2',
+        'datatables',
+        'datatables_select'
+    ], function($, url, Swal){
+        $(document).ready( function () {
+            var dataTable = <?= json_encode($data) ?>;
+            var postData = [];
+            var packageData = [];
+
+            console.log(dataTable);
+            $.map(dataTable, function (item) {
+                item['post_data']['package_data'] = item['package_data'];
+                item['post_data']['total_like'] = item['total_like'];
+                postData.push(item['post_data']);
+            });
+            //event when click to view package
+            function viewPackageData(idButton, data, packageId) {
+                $('#' + idButton).on('click', function (e) {
+                    Swal.fire({
+                        title: "Bạn muốn làm gì?",
+                        type: "info",
+                        width: 400,
+                        showCancelButton: true,
+                        showCloseButton: true,
+                        confirmButtonText: "Lấy gói từ này",
+                        confirmButtonColor: "#ff0055",
+                        cancelButtonColor: "#999999",
+                        cancelButtonText: "Xem tất cả các từ",
+                        reverseButtons: true,
+                        focusConfirm: false,
+                        focusCancel: false
+                    }).then(function(isConfirm) {
+                        if (isConfirm.isConfirmed) {
+                            Swal.fire({
+                                title: 'Please Wait!',
+                                html: 'saving...',// add html attribute if you want or remove
+                                allowOutsideClick: false,
+                                showConfirmButton: false,
+                                allowEscapeKey: false,
+                                allowEnterKey: false,
+                                onBeforeOpen: () => {
+                                    Swal.showLoading()
+                                },
+                            });
+                            $.ajax({
+                                url: "<?= $block->getUrl('lazyspeaker/index/makepackagemine'); ?>",
+                                type: 'POST',
+                                data: {'package_id': packageId},
+                                success: function (data) {
+                                    if(data['result']) {
+                                        Swal.fire({
+                                            icon: 'success',
+                                            title: 'Lưu gói từ thành công!'
+                                        });
+                                    } else {
+                                        Swal.fire({
+                                            icon: 'error',
+                                            title: 'Oops...',
+                                            text: 'Có lỗi xảy ra hoặc gói từ bị trùng tên gói từ đã có. Vui lòng đổi tên gói từ của bạn và thử lại!'
+                                        });
+                                    }
+                                },
+                                error: function (error) {
+                                    Swal.fire({
+                                        icon: 'error',
+                                        title: 'Oops...',
+                                        text: 'Có lỗi xảy ra, xin vui lòng thử lại!'
+                                    });
+                                }
+                            });
+                        } else if(isConfirm.dismiss === "cancel") {
+                            Swal.fire({
+                                width: 900,
+                                html: `<table id="example" class="display" style="width:100%">
+                                    <thead>
+                                        <tr>
+                                            <th></th>
+                                            <th>Word</th>
+                                        </tr>
+                                    </thead>
+                                    <tfoot>
+                                        <tr>
+                                            <th></th>
+                                            <th>Word</th>
+                                        </tr>
+                                    </tfoot>
+                                </table>`
+                            });
+                            table = $('#example').DataTable({
+                                "data": data,
+                                "columns": [
+                                    {
+                                        "className":      'details-control-word',
+                                        "orderable":      false,
+                                        "data":           null,
+                                        "defaultContent": ''
+                                    },
+                                    { "data": "word" }
+                                ],
+                                columnDefs: [
+                                    { "width": "5%", "targets": 0 },
+                                    { "orderable": false, "targets": [0, 1] }
+                                ],
+                                "order": [[1, 'asc']],
+                                "pageLength": 20,
+                                "lengthChange" : false,
+                                "ordering": false,
+                                "pagingType": "full_numbers"
+                            });
+
+                            function formatChild ( data ) {
+                                // `d` is the original data object for the row
+                                let bodyChild = '<tr>'+
+                                    '<td class="child-row">Meaning</td>'+
+                                    '<td>'+data['meaning']+'</td>'+
+                                    '</tr>'+
+                                    '<tr>'+
+                                    '<td class="child-row">Example Sentence</td>'+
+                                    '<td>'+data['sentence_example']+'</td>'+
+                                    '</tr>'+
+                                    '<tr>'+
+                                    '<td class="child-row">Sentence\'s Meaning</td>'+
+                                    '<td>'+data['sentence_meaning']+'</td>'+
+                                    '</tr>'+
+                                    '<tr>'+
+                                    '<td class="child-row">Word Class</td>'+
+                                    '<td>'+data['word_class']+'</td>'+
+                                    '</tr>';
+                                return '<table cellpadding="5" cellspacing="0" border="1">' +
+                                    bodyChild
+                                    + '</table>';
+                            }
+
+                            // Add event listener for opening and closing details
+                            $('#example tbody').on('click', 'td.details-control-word', function () {
+                                var tr = $(this).closest('tr');
+                                var row = table.row( tr );
+                                if ( row.child.isShown() ) {
+                                    // This row is already open - close it
+                                    row.child.hide();
+                                    tr.removeClass('shown');
+                                }
+                                else {
+                                    // Open this row
+                                    row.child( formatChild(row.data()) ).show();
+                                    tr.addClass('shown');
+                                }
+                            });
+                            // $('td.details-control-word').click();
+                        }
+                    });
+                });
+            }
+
+            //count like event
+
+            function likeEvent(id, total_like) {
+                let count, totalLike;
+                $('#' + id).on('click', function (e) {
+                    $.ajax({
+                        url: "<?= $block->getUrl('lazyspeaker/index/savelike'); ?>",
+                        type: 'POST',
+                        data: {'post_id': id },
+                        success: function (data) {
+                            console.log(data);
+                            //countLike_
+                            totalLike = id.split('_');
+                            if(data['total_like'] != null) {
+                                if(data['result'] == 0) {
+                                    count = data['total_like'];
+                                    $('#' + id + ' .liked').css({'color':''});
+                                    $('#' + id).css({'background-color':''});
+                                    $('#total_like_' + totalLike[1]).css({'color':''});
+                                } else if(data['result'] == 1) {
+                                    $('#' + id + ' .liked').css({'color':'#518F35'});
+                                    $('#' + id).css({'background-color':'#ccffcc'});
+                                    $('#total_like_' + totalLike[1]).css({'color':'#0099e6'});
+                                    count = data['total_like'] + 1;
+                                }
+                            }
+                            $('#' + 'countLike_' + totalLike[1]).html(count);
+                        },
+                        error: function (error) {
+
+                        }
+                    });
+                });
+            }
+
+
+            //render data for each row
+            var arrayLikeButton = [];
+            function format ( data ) {
+                console.log(data);
+                let flag, allKeys, keyButton, pack, idPackToStore, likeId, countLikeId, arrLikeData;
+                likeId = 'like_'+ data['id'];
+                let postId = data['id'];
+                arrLikeData = {'id' : likeId, total_like: data['total_like'], post_id: data['id']};
+                arrayLikeButton.push(arrLikeData);
+
+                countLikeId = 'countLike_' + data['id'];
+                // `d` is the original data object for the row
+                allKeys = Object.keys(data['package_data']);
+                let allButtonIds = [];
+                let allButton = '';
+                $.map(allKeys, function (key) {
+                    pack = data['package_data'][key];
+                    keyButton = key + pack[pack.length - 1] + data['id'];
+                    idPackToStore = pack[pack.length - 1];
+                    allButtonIds.push({id: keyButton, label: key, package_id: idPackToStore});
+                    pack.pop();
+                    flag = {id : keyButton, package: pack, package_id: idPackToStore};
+                    packageData.push(flag);
+                });
+                allButton += '<td>';
+                allButtonIds.forEach(function (item) {
+                    allButton += '<button class="pack" id="'+item['id']+'">'+item['label']+'</button>';
+                });
+                allButton += '</td>';
+                let bodyChild = '<tr>'+
+                    '<td class="child-row">Các gói từ</td>'+
+                    allButton +
+                    '</tr>' +
+                    '<tr>'+
+                    '<td class="like child-row" id="'+likeId+'">' +
+                    '<i class="far fa-thumbs-up liked"></i><span class="like-text">Like</span>' +
+                    '</td>' +
+                    '<td class="count-like">' +
+                    '<i class="fas fa-thumbs-up liked-total" id="total_like_'+postId+'"></i>' +
+                    '<span id="'+countLikeId+'" class="like-text">'+data['total_like']+'</span>' +
+                    '</td>'+
+                    '</tr>';
+                return '<table cellpadding="5" cellspacing="0" border="1">' +
+                    bodyChild
+                    + '</table>';
+            }
+
+            var table = $('#allPosts').DataTable({
+                "data": postData,
+                "columns": [
+                    {
+                        "className":      'details-control',
+                        "orderable":      false,
+                        "data":           null,
+                        "defaultContent": ''
+                    },
+                    { "data": "title" }
+                ],
+                columnDefs: [
+                    { "width": "5%", "targets": 0 },
+                    { "orderable": false, "targets": [0, 1] }
+                ],
+                "order": [[1, 'asc']],
+                "ordering": false
+            });
+
+            // Add event listener for opening and closing details
+            $('#allPosts tbody').on('click', 'td.details-control', function (e) {
+                var tr = $(this).closest('tr');
+                var row = table.row( tr );
+                if ( row.child.isShown() ) {
+                    // This row is already open - close it
+                    // row.child.hide();
+                    // tr.removeClass('shown');
+                }
+                else {
+                    // Open this row
+                    row.child( format(row.data()) ).show();
+                    tr.addClass('shown');
+                }
+            });
+            //click to get value of packageData
+            $('td.details-control').click();
+            //event view packageData
+            $.map(packageData, function (packData) {
+                viewPackageData(packData['id'], packData['package'], packData['package_id']);
+            });
+
+            //get All Post liked
+            var allLikedPosts = <?= json_encode($allLikedPost['items']) ?>;
+            var idsLiked = [];
+            $.map(allLikedPosts, function (markLike) {
+                idsLiked.push(markLike['post_id'] - 0);
+            });
+
+            console.log(idsLiked);
+            //END get All Post liked
+
+            let flagId;
+            $.map(arrayLikeButton, function (like) {
+                //likeEvent(post_id, like)
+                    console.log(like['post_id']);
+                flagId = like['post_id'] - 0;
+                if(idsLiked.includes(flagId)) {
+                    $('#' + like['id'] + ' .liked').css({'color':'#518F35'});
+                    $('#' + like['id']).css({'background-color':'#ccffcc'});
+                    $('#total_like_' + like['post_id']).css({'color':'#0099e6'});
+                }
+
+                likeEvent(like['id'], like['total_like']);
+            });
+        });
+    });
+</script>
+
+<div class="container">
+    <table id="allPosts" class="display" style="width:100%">
+        <thead>
+        <tr>
+            <th></th>
+            <th>Title</th>
+        </tr>
+        </thead>
+        <tfoot>
+        <tr>
+            <th></th>
+            <th>Title</th>
+        </tr>
+        </tfoot>
+    </table>
+</div>

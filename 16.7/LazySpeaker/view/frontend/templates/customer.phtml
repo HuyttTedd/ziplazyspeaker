@@ -1,0 +1,68 @@
+
+<?php
+use Mageplaza\LazySpeaker\Block\ProcessForm;
+/** @var ProcessForm $block */
+
+$customerData = $block->getCustomerData();
+?>
+
+<div class="row">
+    <div class="col-4">
+        <form name="addData" method="post" id="addData" class="form"
+              action="<?= $block->getCustomerFormAction(); ?>"
+              data-hasrequired="<?= $block->escapeHtmlAttr(__('* Required Fields')) ?>"
+              data-mage-init='{"validation":{}}' enctype="multipart/form-data">
+            <input name="form_key" type="hidden" value="<?php echo $block->getFormKey();?>">
+            <fieldset class="fieldset">
+                <legend class="legend">
+                    <span><?= $block->escapeHtmlAttr(__('Thông tin cá nhân')) ?></span>
+                </legend>
+                <fieldset class="fieldset row">
+                    <div class="fields col-4 bg-primary">
+                        <div class="field name required">
+                            <label class="label" for="title"><span><?= $block->
+                                    escapeHtmlAttr(__('email')) ?></span></label>
+                            <div class="control">
+                                <input name="email" id="email" title="email" class="input-text"
+                                       value="<?= $customerData['email'] ?>" type="text" disabled>
+                            </div>
+                        </div>
+                    </div>
+                </fieldset>
+                <fieldset class="fieldset row">
+                    <div class="fields col-4 bg-primary">
+                        <div class="field name required">
+                            <label class="label" for="title"><span><?= $block->
+                                    escapeHtmlAttr(__('Tên')) ?></span></label>
+                            <div class="control">
+                                <input name="name" id="name" title="Name" class="input-text"
+                                       value="<?= $customerData['firstname'] ?>" type="text">
+                            </div>
+                        </div>
+                    </div>
+                </fieldset>
+
+                <fieldset class="fieldset row">
+                    <div class="fields col-4 bg-primary">
+                        <div class="field name">
+                            <label class="label" for="title"><span><?= $block->
+                                    escapeHtmlAttr(__('Tổng số like nhận được:')) ?></span></label>
+                            <div class="control">
+                                <input name="total_like" id="total_like" title="total_like" class="input-text"
+                                       value="<?= $customerData['total_like'] ?> LIKE" type="text" disabled>
+                            </div>
+                        </div>
+                    </div>
+                </fieldset>
+
+            </fieldset>
+            <div class="actions-toolbar">
+                <div class="primary">
+                    <button type="submit" class="action submit primary" title="Save"><span><?= $block->
+                            escapeHtmlAttr(__('Save')) ?></span></button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+

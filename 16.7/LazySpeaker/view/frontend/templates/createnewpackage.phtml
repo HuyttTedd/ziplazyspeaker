@@ -1,0 +1,146 @@
+<?php
+use Mageplaza\LazySpeaker\Block\ProcessForm;
+/** @var ProcessForm $block */
+$allWords = $block->getAllWords();
+?>
+
+<div class="row">
+    <div class="col-4">
+        <form name="addData" method="post" id="addData" class="form"
+              action="<?= $block->getPackageFormAction(); ?>"
+              data-hasrequired="<?= $block->escapeHtmlAttr(__('* Required Fields')) ?>"
+              data-mage-init='{"validation":{}}' enctype="multipart/form-data">
+            <input name="form_key" type="hidden" value="<?php echo $block->getFormKey();?>">
+            <fieldset class="fieldset">
+                <legend class="legend">
+                    <span><?= $block->escapeHtmlAttr(__('Add new package')) ?></span>
+                </legend>
+                <fieldset class="fieldset row">
+                    <div class="fields col-4 bg-primary">
+                        <div class="field name required">
+                            <label class="label" for="title"><span><?= $block->
+                                    escapeHtmlAttr(__('Name of Package')) ?></span></label>
+                            <div class="control">
+                                <input name="package_name" id="word" title="Package Name" class="input-text" type="text"
+                                       data-validate="{required:true}">
+                            </div>
+                        </div>
+                    </div>
+                </fieldset>
+            </fieldset>
+            <input type="hidden" name="ids" id="id-selected">
+            <div class="actions-toolbar">
+                <div class="primary">
+                    <button type="submit" class="action submit primary" title="Save"><span><?= $block->
+                            escapeHtmlAttr(__('Save')) ?></span></button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="container">
+    <table id="example" class="display cell-border" style="width:100%">
+        <thead>
+            <tr>
+                <th><input id='exampleSelectAll' type="checkbox"></th>
+                <th>Vị trí</th>
+                <th></th>
+                <th>Từ</th>
+                <th>Gói từ đã có</th>
+            </tr>
+        </thead>
+
+        <tbody>
+        <?php foreach ($allWords as $word) { ?>
+            <tr>
+                <th></th>
+                <td><?= $word->getData('word_position') ?></td>
+                <td><?= $word->getData('id') ?></td>
+                <td style="word-break:break-all; "><?= $word->getData('word') ?></td>
+                <td style="white-space:normal;"><?= $block->helperData->getAllBelongPackages($word->getData('id')) ?></td>
+            </tr>
+        <?php } ?>
+        </tbody>
+
+        <tfoot>
+            <tr>
+                <th></th>
+                <th>Vị trí</th>
+                <th></th>
+                <th>Từ</th>
+                <th>Gói từ đã có</th>
+            </tr>
+        </tfoot>
+    </table>
+</div>
+
+<script>
+    require([
+        'jquery',
+        'datatables',
+        'datatables_select',
+        'datatables_rowreorder'
+    ], function($){
+        $(document).ready( function () {
+            var table = $('#example').DataTable({
+                responsive: true,
+                order: [[1, 'asc']],
+                columnDefs: [
+                    //Added to set class name for reordering ability
+                    {targets: [1,3], className: 'reorder'},
+                    { "width": "5%", "targets": 0 },
+                    { "width": "10%", "targets": 1 },
+                    { "width": "40%", "targets": 3 },
+                    { "orderable": false, "targets": [0, 3, 4] },
+                    {
+                        orderable: true,
+                        className: 'select-checkbox',
+                        targets: 0
+                    },
+                    {
+                        "targets": [ 2 ],
+                        "visible": false,
+                        "searchable": false
+                    }
+                    ],
+                select: {
+                    style: 'multi',
+                },
+                rowReorder: {
+                    //Changed selecotr to the reorder class anme
+                    selector: '.reorder',
+                    //Set dataSrc to the column containing the reorder sequence number
+                    dataSrc: 1
+                }
+            });
+
+            $("#exampleSelectAll").on( "click", function(e) {
+                if ($(this).is( ":checked" )) {
+                    table.rows({page: 'current'}).select();
+                } else {
+                    table.rows().deselect();
+                }
+            });
+
+
+            table.on('select', function (e, dt, type, indexes) {
+                let idSelected = [];
+                var rowsSelected = dt.rows({selected: true}).data();
+                $.map(rowsSelected, function (item) {
+                    idSelected.push(item[2]);
+                });
+                $("#id-selected").val(idSelected.join());
+            });
+
+            table.on('deselect', function (e, dt, type, indexes) {
+                let idSelected = [];
+                var rowsSelected = dt.rows({selected: true}).data();
+                $.map(rowsSelected, function (item) {
+                    idSelected.push(item[2]);
+                });
+                $("#id-selected").val(idSelected.join());
+            });
+        } );
+    });
+</script>

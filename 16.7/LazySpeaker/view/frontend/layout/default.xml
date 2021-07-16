@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<!--
+/**
+ * Copyright © Magento, Inc. All rights reserved.
+ * See COPYING.txt for license details.
+ */
+-->
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <body>
+        <referenceBlock name="footer_links">
+            <block class="Magento\Framework\View\Element\Html\Link\Current" name="lazy-link-phone">
+                <arguments>
+                    <argument name="label" xsi:type="string" translate="true">Phone: 09123456577</argument>
+<!--                    <argument name="path" xsi:type="string">search/term/popular</argument>-->
+                </arguments>
+            </block>
+            <block class="Magento\Framework\View\Element\Html\Link\Current" before="-" name="lazy-link-email">
+                <arguments>
+                    <argument name="label" xsi:type="string" translate="true">Contact us: huytt@mageplaza.com</argument>
+<!--                    <argument name="path" xsi:type="string">search/term/popular</argument>-->
+                </arguments>
+            </block>
+            <referenceBlock name="search-term-popular-link" remove="true"/>
+            <referenceBlock name="form.subscribe" remove="true"/>
+            <referenceBlock name="privacy-policy-link" remove="true"/>
+            <referenceBlock name="catalog-search-advanced-link" remove="true"/>
+            <referenceBlock name="contact-us-link" remove="true"/>
+            <referenceBlock name="sales-guest-form-link" remove="true"/>
+        </referenceBlock>
+    </body>
+</page>

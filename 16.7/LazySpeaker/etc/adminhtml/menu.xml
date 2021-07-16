@@ -1,0 +1,9 @@
+<?xml version="1.0" ?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Backend:etc/menu.xsd">
+    <menu>
+        <add id="Mageplaza_LazySpeaker::mageplaza" title="Lazy Speaker" module="Mageplaza_LazySpeaker" sortOrder="10" resource="Mageplaza_LazySpeaker::mageplaza"/>
+        <add id="Mageplaza_LazySpeaker::lazyspeaker" title="Lazy Speaker" module="Mageplaza_LazySpeaker" sortOrder="100" parent="Mageplaza_LazySpeaker::mageplaza" resource="Mageplaza_LazySpeaker::lazyspeaker" />
+        <add id="Mageplaza_LazySpeaker::manageposts" title="Manage Posts" module="Mageplaza_LazySpeaker" sortOrder="2" action="lazyspeaker/post/index" resource="Mageplaza_LazySpeaker::manageposts" parent="Mageplaza_LazySpeaker::lazyspeaker"/>
+        <add id="Mageplaza_LazySpeaker::lazyspeaker_configuration" title="Configuration" module="Mageplaza_LazySpeaker" sortOrder="5" parent="Mageplaza_LazySpeaker::lazyspeaker" action="adminhtml/system_config/edit/section/lazyspeaker_section_id" resource="Mageplaza_LazySpeaker::lazyspeaker_configuration"/>
+    </menu>
+</config>
